@@ -102,7 +102,7 @@ async function registrarUsuario() {
     const nuevoUsuario = { nombre: nombreComp, email, password, telefono, ciudad }; 
 
     try {
-        const respuesta = await fetch(`${URL_BASE}/registro`, { 
+        const respuesta = await fetch(`${URL_BASE}/usuarios/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(nuevoUsuario)
@@ -118,7 +118,7 @@ async function registrarUsuario() {
             mostrarAlerta(datos.error || datos.mensaje || "Error desconocido al registrar.", "error");
         }
     } catch (error) {
-        mostrarAlerta("Error de conexión con el servidor. ¿Docker está corriendo?", "error");
+        mostrarAlerta("Error de conexión con el servidor backend.", "error");
     }
 }
 
@@ -129,7 +129,7 @@ async function iniciarSesion() {
     const credenciales = { email: loginEmail, password: loginPassword };
 
     try {
-        const respuesta = await fetch(`${URL_BASE}/login`, {
+        const respuesta = await fetch(`${URL_BASE}/usuarios/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credenciales)
@@ -163,7 +163,7 @@ async function iniciarSesion() {
             mostrarAlerta(`Fallo en el inicio de sesión: ${datos.error || datos.mensaje}`, "error");
         }
     } catch (error) {
-        mostrarAlerta("Error de conexión con el servidor.", "error");
+        mostrarAlerta("Error de conexión con el servidor backend.", "error");
     }
 }
 
@@ -198,13 +198,13 @@ async function guardarPerfil() {
             
             localStorage.setItem("usuarioActivo", JSON.stringify(usuarioActivo));
             
-            mostrarAlerta(datos.message || "Perfil actualizado con éxito. 🎉", "success");
+            mostrarAlerta(datos.mensaje || datos.message || "Perfil actualizado con éxito. 🎉", "success");
             irAPerfil(); 
         } else {
-            mostrarAlerta(`Error al guardar perfil: ${datos.message || datos.error}`, "error");
+            mostrarAlerta(`Error al guardar perfil: ${datos.mensaje || datos.message || datos.error}`, "error");
         }
     } catch (error) {
-        mostrarAlerta("Error de conexión con el servidor.", "error");
+        mostrarAlerta("Error de conexión con el servidor backend.", "error");
     }
 }
 
@@ -304,7 +304,7 @@ function filtrarMascotas() {
 window.onload = function () {
     if (usuarioActivo && usuarioActivo.nombreComp) {
         document.getElementById("nombreUsuario").textContent = usuarioActivo.nombreComp;
-        document.getElementById("userName").textContent = usuarioActario.nombreComp;
+        document.getElementById("userName").textContent = usuarioActivo.nombreComp;
         
         mostrarPanel('panelUsuario');
         mostrarMascotas(); 
