@@ -1,7 +1,9 @@
+const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
 const databaseFile = path.resolve(__dirname, '..', 'db', 'happypaws.db');
+const schemaFile = path.resolve(__dirname, '..', 'db', 'schema.sql');
 
 const connection = new sqlite3.Database(
   databaseFile,
@@ -15,72 +17,37 @@ const connection = new sqlite3.Database(
   }
 );
 
-const tableStatements = [
-  `CREATE TABLE IF NOT EXISTS usuarios (
-    idusuario INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombrecomp TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    telefono TEXT,
-    ciudad TEXT,
-    fecha_registro TEXT DEFAULT (datetime('now'))
-  )`,
-  `CREATE TABLE IF NOT EXISTS refugios (
-    idrefugio INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombreref TEXT NOT NULL,
-    direccionref TEXT,
-    horarioatenc TEXT,
-    tiporef TEXT,
-    telefono TEXT,
-    email TEXT UNIQUE
-  )`,
-  `CREATE TABLE IF NOT EXISTS responsables (
-    idres INTEGER PRIMARY KEY AUTOINCREMENT,
-    idrefugio INTEGER NOT NULL,
-    nombreres TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    telefono TEXT,
-    direccionres TEXT,
-    FOREIGN KEY (idrefugio) REFERENCES refugios(idrefugio) ON DELETE CASCADE
-  )`,
-  `CREATE TABLE IF NOT EXISTS mascotas (
-    idmascota INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_refugio INTEGER NOT NULL,
-    id_responsable INTEGER,
-    nombremasc TEXT NOT NULL,
-    especie TEXT NOT NULL,
-    raza TEXT NOT NULL,
-    sexo TEXT NOT NULL,
-    edady INTEGER NOT NULL DEFAULT 0,
-    img_url TEXT,
-    FOREIGN KEY (id_refugio) REFERENCES refugios(idrefugio) ON DELETE CASCADE,
-    FOREIGN KEY (id_responsable) REFERENCES responsables(idres) ON DELETE SET NULL
-  )`,
-  `CREATE TABLE IF NOT EXISTS sesiones (
-    idsesion INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_usuario INTEGER NOT NULL,
-    token TEXT NOT NULL UNIQUE,
-    creado_en TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(idusuario) ON DELETE CASCADE
-  )`,
-];
+const expectedTables = ['Usuario', 'Refugio', 'Mascota', 'Responsables_de_Refugio'];
 
 connection.serialize(() => {
   connection.run('PRAGMA foreign_keys = ON');
 
-  let pendientes = tableStatements.length;
+  connection.all("SELECT name FROM sqlite_master WHERE type = 'table'", (err, rows = []) => {
+    if (err) {
+      console.error('❌ No fue posible verificar las tablas de SQLite:', err.message);
+      return;
+    }
 
-  tableStatements.forEach((sql) => {
-    connection.run(sql, (err) => {
-      if (err) {
-        console.error('❌ Error al crear tabla:', err.message);
-        console.error('   SQL:', sql);
-      }
+    const existentes = new Set(rows.map((row) => row.name));
+    const faltantes = expectedTables.filter((tabla) => !existentes.has(tabla));
 
-      pendientes -= 1;
-      if (pendientes === 0) {
-        console.log('📦 Tablas de SQLite verificadas/creadas correctamente.');
+    if (!faltantes.length) {
+      console.log('📦 Tablas principales detectadas en la base de datos.');
+      return;
+    }
+
+    if (!fs.existsSync(schemaFile)) {
+      console.error('❌ No se encontró el archivo schema.sql para crear las tablas faltantes.');
+      return;
+    }
+
+    const schema = fs.readFileSync(schemaFile, 'utf-8');
+
+    connection.exec(schema, (schemaErr) => {
+      if (schemaErr) {
+        console.error('❌ Error al ejecutar schema.sql:', schemaErr.message);
+      } else {
+        console.log('📄 schema.sql ejecutado correctamente. Tablas creadas según el esquema proporcionado.');
       }
     });
   });
