@@ -1,0 +1,12 @@
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# SQLite journaling files
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Local data folder
+/data/
