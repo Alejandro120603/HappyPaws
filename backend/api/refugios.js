@@ -6,10 +6,26 @@ const router = express.Router();
 router.get('/', async (_req, res) => {
   try {
     const refugios = await db.all(
-      'SELECT idrefugio, nombreref, direccionref, horarioatenc, tiporef, telefono, email FROM refugios ORDER BY nombreref'
+      `SELECT ref.idrefugio, ref.nombreref, ref.direccionref, ref.horarioatenc, ref.tiporef,
+              resp.nombreres AS responsable, resp.telefono, resp.email, resp.direccionres
+         FROM Refugio ref
+         LEFT JOIN Responsables_de_Refugio resp ON resp.idres = ref.idrefugio
+         ORDER BY ref.nombreref`
     );
 
-    res.json({ refugios });
+    res.json({
+      refugios: refugios.map((r) => ({
+        idrefugio: r.idrefugio,
+        nombreref: r.nombreref,
+        direccionref: r.direccionref,
+        horarioatenc: r.horarioatenc,
+        tiporef: r.tiporef,
+        telefono: r.telefono || null,
+        email: r.email || null,
+        responsable: r.responsable || null,
+        ciudad: r.direccionres || null,
+      })),
+    });
   } catch (error) {
     console.error('Error al listar refugios:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -24,25 +40,23 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const existente = await db.get('SELECT idres FROM responsables WHERE email = ?', [email.trim()]);
+    const existente = await db.get('SELECT idres FROM Responsables_de_Refugio WHERE email = ?', [email.trim()]);
     if (existente) {
       return res.status(409).json({ error: 'Este correo ya está registrado como responsable.' });
     }
 
     const nuevoRefugio = await db.run(
-      'INSERT INTO refugios (nombreref, direccionref, horarioatenc, tiporef, telefono, email) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO Refugio (nombreref, direccionref, horarioatenc, tiporef) VALUES (?, ?, ?, ?)',
       [
         nombreRefugio.trim(),
         ciudad || null,
-        '9:00 AM - 5:00 PM',
+        'Horario no especificado',
         'General',
-        telefono || null,
-        email.trim(),
       ]
     );
 
-    const nuevoResponsable = await db.run(
-      'INSERT INTO responsables (idrefugio, nombreres, email, password, telefono, direccionres) VALUES (?, ?, ?, ?, ?, ?)',
+    await db.run(
+      'INSERT INTO Responsables_de_Refugio (idres, nombreres, email, password, telefono, direccionres) VALUES (?, ?, ?, ?, ?, ?)',
       [
         nuevoRefugio.id,
         responsable.trim(),
@@ -56,10 +70,10 @@ router.post('/register', async (req, res) => {
     const refugio = await db.get(
       `SELECT resp.idres, resp.nombreres, resp.email, resp.telefono, resp.direccionres,
               ref.idrefugio, ref.nombreref, ref.direccionref, ref.horarioatenc, ref.tiporef
-       FROM responsables resp
-       JOIN refugios ref ON ref.idrefugio = resp.idrefugio
-       WHERE resp.idres = ?`,
-      [nuevoResponsable.id]
+         FROM Responsables_de_Refugio resp
+         JOIN Refugio ref ON ref.idrefugio = resp.idres
+        WHERE resp.idres = ?`,
+      [nuevoRefugio.id]
     );
 
     res.status(201).json({
@@ -83,9 +97,9 @@ router.post('/login', async (req, res) => {
     const refugio = await db.get(
       `SELECT resp.idres, resp.nombreres, resp.email, resp.password, resp.telefono, resp.direccionres,
               ref.idrefugio, ref.nombreref, ref.direccionref
-       FROM responsables resp
-       JOIN refugios ref ON ref.idrefugio = resp.idrefugio
-       WHERE resp.email = ?`,
+         FROM Responsables_de_Refugio resp
+         JOIN Refugio ref ON ref.idrefugio = resp.idres
+        WHERE resp.email = ?`,
       [email.trim()]
     );
 
@@ -114,14 +128,15 @@ router.get('/:id/mascotas', async (req, res) => {
 
   try {
     const mascotas = await db.all(
-      `SELECT m.idmascota, m.nombremasc, m.especie, m.raza, m.sexo, m.edady, m.img_url,
-              m.id_refugio AS idrefugio, m.id_responsable AS idresponsable,
-              r.nombreref, r.direccionref, resp.nombreres
-       FROM mascotas m
-       JOIN refugios r ON r.idrefugio = m.id_refugio
-       LEFT JOIN responsables resp ON resp.idres = m.id_responsable
-       WHERE m.id_refugio = ?
-       ORDER BY m.idmascota DESC`,
+      `SELECT m.idmascota, m.nombremasc, m.especie, m.raza, m.sexo, m.edady,
+              m.idrefugio AS idrefugio,
+              r.nombreref, r.direccionref,
+              resp.idres AS idresponsable, resp.nombreres
+         FROM Mascota m
+         JOIN Refugio r ON r.idrefugio = m.idrefugio
+         LEFT JOIN Responsables_de_Refugio resp ON resp.idres = r.idrefugio
+        WHERE m.idrefugio = ?
+        ORDER BY m.idmascota DESC`,
       [id]
     );
 
@@ -132,7 +147,7 @@ router.get('/:id/mascotas', async (req, res) => {
       raza: m.raza,
       sexo: m.sexo,
       edad: m.edady,
-      img_url: m.img_url,
+      img_url: 'https://via.placeholder.com/260x200?text=Añadir+Imagen',
       idrefugio: m.idrefugio,
       idresponsable: m.idresponsable,
       responsable: m.nombreres || null,
@@ -148,7 +163,11 @@ router.get('/:id', async (req, res) => {
 
   try {
     const refugio = await db.get(
-      'SELECT idrefugio, nombreref, direccionref, horarioatenc, tiporef, telefono, email FROM refugios WHERE idrefugio = ?',
+      `SELECT ref.idrefugio, ref.nombreref, ref.direccionref, ref.horarioatenc, ref.tiporef,
+              resp.telefono, resp.email, resp.direccionres
+         FROM Refugio ref
+         LEFT JOIN Responsables_de_Refugio resp ON resp.idres = ref.idrefugio
+        WHERE ref.idrefugio = ?`,
       [id]
     );
 
@@ -168,7 +187,7 @@ router.put('/:id', async (req, res) => {
   const { nombre, direccion, horario, tipo, telefono, email } = req.body;
 
   try {
-    const existente = await db.get('SELECT idrefugio FROM refugios WHERE idrefugio = ?', [id]);
+    const existente = await db.get('SELECT idrefugio FROM Refugio WHERE idrefugio = ?', [id]);
     if (!existente) {
       return res.status(404).json({ error: 'Refugio no encontrado' });
     }
@@ -192,24 +211,43 @@ router.put('/:id', async (req, res) => {
       campos.push('tiporef = ?');
       valores.push(tipo);
     }
+
+    const camposResponsable = [];
+    const valoresResponsable = [];
+
     if (typeof telefono !== 'undefined') {
-      campos.push('telefono = ?');
-      valores.push(telefono);
-    }
-    if (typeof email !== 'undefined') {
-      campos.push('email = ?');
-      valores.push(email);
+      camposResponsable.push('telefono = ?');
+      valoresResponsable.push(telefono);
     }
 
-    if (!campos.length) {
+    if (typeof email !== 'undefined') {
+      camposResponsable.push('email = ?');
+      valoresResponsable.push(email);
+    }
+
+    if (!campos.length && !camposResponsable.length) {
       return res.status(400).json({ error: 'No hay datos para actualizar' });
     }
 
-    valores.push(id);
-    await db.run(`UPDATE refugios SET ${campos.join(', ')} WHERE idrefugio = ?`, valores);
+    if (campos.length) {
+      valores.push(id);
+      await db.run(`UPDATE Refugio SET ${campos.join(', ')} WHERE idrefugio = ?`, valores);
+    }
+
+    if (camposResponsable.length) {
+      valoresResponsable.push(id);
+      await db.run(
+        `UPDATE Responsables_de_Refugio SET ${camposResponsable.join(', ')} WHERE idres = ?`,
+        valoresResponsable
+      );
+    }
 
     const refugio = await db.get(
-      'SELECT idrefugio, nombreref, direccionref, horarioatenc, tiporef, telefono, email FROM refugios WHERE idrefugio = ?',
+      `SELECT ref.idrefugio, ref.nombreref, ref.direccionref, ref.horarioatenc, ref.tiporef,
+              resp.telefono, resp.email, resp.direccionres
+         FROM Refugio ref
+         LEFT JOIN Responsables_de_Refugio resp ON resp.idres = ref.idrefugio
+        WHERE ref.idrefugio = ?`,
       [id]
     );
 
@@ -224,12 +262,13 @@ router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const existente = await db.get('SELECT idrefugio FROM refugios WHERE idrefugio = ?', [id]);
+    const existente = await db.get('SELECT idrefugio FROM Refugio WHERE idrefugio = ?', [id]);
     if (!existente) {
       return res.status(404).json({ error: 'Refugio no encontrado' });
     }
 
-    await db.run('DELETE FROM refugios WHERE idrefugio = ?', [id]);
+    await db.run('DELETE FROM Responsables_de_Refugio WHERE idres = ?', [id]);
+    await db.run('DELETE FROM Refugio WHERE idrefugio = ?', [id]);
     res.json({ mensaje: 'Refugio eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar refugio:', error);

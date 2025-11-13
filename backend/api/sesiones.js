@@ -11,6 +11,43 @@ const crearToken = () => {
   return crypto.randomBytes(24).toString('hex');
 };
 
+let tablaSesionesLista = null;
+
+async function obtenerNombreTablaSesiones() {
+  if (tablaSesionesLista !== null) {
+    return tablaSesionesLista;
+  }
+
+  const candidatos = ['Sesiones', 'sesiones'];
+
+  for (const nombre of candidatos) {
+    // eslint-disable-next-line no-await-in-loop
+    const existente = await db.get(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      [nombre]
+    );
+    if (existente && existente.name) {
+      tablaSesionesLista = existente.name;
+      return tablaSesionesLista;
+    }
+  }
+
+  tablaSesionesLista = false;
+  return tablaSesionesLista;
+}
+
+async function asegurarTablaSesiones(res) {
+  const nombreTabla = await obtenerNombreTablaSesiones();
+  if (!nombreTabla) {
+    res
+      .status(501)
+      .json({ error: 'La tabla de sesiones no existe en la base de datos configurada.' });
+    return null;
+  }
+
+  return nombreTabla;
+}
+
 router.post('/', async (req, res) => {
   const { idUsuario, token } = req.body;
 
@@ -19,9 +56,14 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const usuario = await db.get('SELECT idusuario FROM usuarios WHERE idusuario = ?', [idUsuario]);
+    const usuario = await db.get('SELECT idusuario FROM Usuario WHERE idusuario = ?', [idUsuario]);
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    const nombreTabla = await asegurarTablaSesiones(res);
+    if (!nombreTabla) {
+      return;
     }
 
     let tokenFinal = (token || '').trim() || crearToken();
@@ -29,12 +71,11 @@ router.post('/', async (req, res) => {
     let intentos = 0;
     while (intentos < 3) {
       try {
-        const resultado = await db.run('INSERT INTO sesiones (id_usuario, token) VALUES (?, ?)', [idUsuario, tokenFinal]);
+        const insertSql = `INSERT INTO ${nombreTabla} (id_usuario, token) VALUES (?, ?)`;
+        const resultado = await db.run(insertSql, [idUsuario, tokenFinal]);
 
-        const sesion = await db.get(
-          'SELECT idsesion, id_usuario AS idUsuario, token, creado_en FROM sesiones WHERE idsesion = ?',
-          [resultado.id]
-        );
+        const selectSql = `SELECT idsesion, id_usuario AS idUsuario, token, creado_en FROM ${nombreTabla} WHERE idsesion = ?`;
+        const sesion = await db.get(selectSql, [resultado.id]);
 
         return res.status(201).json({ mensaje: 'Sesión creada correctamente', sesion });
       } catch (error) {
@@ -58,10 +99,13 @@ router.get('/:token', async (req, res) => {
   const { token } = req.params;
 
   try {
-    const sesion = await db.get(
-      'SELECT idsesion, id_usuario AS idUsuario, token, creado_en FROM sesiones WHERE token = ?',
-      [token]
-    );
+    const nombreTabla = await asegurarTablaSesiones(res);
+    if (!nombreTabla) {
+      return;
+    }
+
+    const selectSql = `SELECT idsesion, id_usuario AS idUsuario, token, creado_en FROM ${nombreTabla} WHERE token = ?`;
+    const sesion = await db.get(selectSql, [token]);
 
     if (!sesion) {
       return res.status(404).json({ error: 'Sesión no encontrada.' });
@@ -78,7 +122,13 @@ router.delete('/:token', async (req, res) => {
   const { token } = req.params;
 
   try {
-    const resultado = await db.run('DELETE FROM sesiones WHERE token = ?', [token]);
+    const nombreTabla = await asegurarTablaSesiones(res);
+    if (!nombreTabla) {
+      return;
+    }
+
+    const deleteSql = `DELETE FROM ${nombreTabla} WHERE token = ?`;
+    const resultado = await db.run(deleteSql, [token]);
     if (!resultado.changes) {
       return res.status(404).json({ error: 'Sesión no encontrada.' });
     }

@@ -8,9 +8,9 @@ router.get('/', async (_req, res) => {
     const responsables = await db.all(
       `SELECT resp.idres, resp.nombreres, resp.email, resp.telefono, resp.direccionres,
               ref.idrefugio, ref.nombreref
-       FROM responsables resp
-       JOIN refugios ref ON ref.idrefugio = resp.idrefugio
-       ORDER BY resp.nombreres`
+         FROM Responsables_de_Refugio resp
+         JOIN Refugio ref ON ref.idrefugio = resp.idres
+         ORDER BY resp.nombreres`
     );
 
     res.json({ responsables });
@@ -28,28 +28,33 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const refugio = await db.get('SELECT idrefugio FROM refugios WHERE idrefugio = ?', [idRefugio]);
+    const refugio = await db.get('SELECT idrefugio FROM Refugio WHERE idrefugio = ?', [idRefugio]);
     if (!refugio) {
       return res.status(400).json({ error: 'El refugio indicado no existe.' });
     }
 
-    const existente = await db.get('SELECT idres FROM responsables WHERE email = ?', [email.trim()]);
+    const existente = await db.get('SELECT idres FROM Responsables_de_Refugio WHERE idres = ?', [idRefugio]);
     if (existente) {
+      return res.status(409).json({ error: 'El refugio ya tiene un responsable registrado.' });
+    }
+
+    const correoUsado = await db.get('SELECT idres FROM Responsables_de_Refugio WHERE email = ?', [email.trim()]);
+    if (correoUsado) {
       return res.status(409).json({ error: 'El correo ya está asociado a un responsable.' });
     }
 
-    const resultado = await db.run(
-      'INSERT INTO responsables (idrefugio, nombreres, email, password, telefono, direccionres) VALUES (?, ?, ?, ?, ?, ?)',
+    await db.run(
+      'INSERT INTO Responsables_de_Refugio (idres, nombreres, email, password, telefono, direccionres) VALUES (?, ?, ?, ?, ?, ?)',
       [idRefugio, nombre.trim(), email.trim(), password.trim(), telefono || null, ciudad || null]
     );
 
     const responsable = await db.get(
       `SELECT resp.idres, resp.nombreres, resp.email, resp.telefono, resp.direccionres,
               ref.idrefugio, ref.nombreref
-       FROM responsables resp
-       JOIN refugios ref ON ref.idrefugio = resp.idrefugio
-       WHERE resp.idres = ?`,
-      [resultado.id]
+         FROM Responsables_de_Refugio resp
+         JOIN Refugio ref ON ref.idrefugio = resp.idres
+        WHERE resp.idres = ?`,
+      [idRefugio]
     );
 
     res.status(201).json({ mensaje: 'Responsable creado correctamente', responsable });
@@ -66,9 +71,9 @@ router.get('/:id', async (req, res) => {
     const responsable = await db.get(
       `SELECT resp.idres, resp.nombreres, resp.email, resp.telefono, resp.direccionres,
               ref.idrefugio, ref.nombreref
-       FROM responsables resp
-       JOIN refugios ref ON ref.idrefugio = resp.idrefugio
-       WHERE resp.idres = ?`,
+         FROM Responsables_de_Refugio resp
+         JOIN Refugio ref ON ref.idrefugio = resp.idres
+        WHERE resp.idres = ?`,
       [id]
     );
 
@@ -85,10 +90,10 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { telefono, ciudad, responsable, password, idRefugio } = req.body;
+  const { telefono, ciudad, responsable, password } = req.body;
 
   try {
-    const existente = await db.get('SELECT idres FROM responsables WHERE idres = ?', [id]);
+    const existente = await db.get('SELECT idres FROM Responsables_de_Refugio WHERE idres = ?', [id]);
     if (!existente) {
       return res.status(404).json({ error: 'Responsable no encontrado' });
     }
@@ -112,28 +117,20 @@ router.put('/:id', async (req, res) => {
       campos.push('password = ?');
       valores.push(password);
     }
-    if (typeof idRefugio !== 'undefined') {
-      const refugio = await db.get('SELECT idrefugio FROM refugios WHERE idrefugio = ?', [idRefugio]);
-      if (!refugio) {
-        return res.status(400).json({ error: 'El refugio indicado no existe.' });
-      }
-      campos.push('idrefugio = ?');
-      valores.push(idRefugio);
-    }
 
     if (!campos.length) {
       return res.status(400).json({ error: 'No hay datos para actualizar' });
     }
 
     valores.push(id);
-    await db.run(`UPDATE responsables SET ${campos.join(', ')} WHERE idres = ?`, valores);
+    await db.run(`UPDATE Responsables_de_Refugio SET ${campos.join(', ')} WHERE idres = ?`, valores);
 
     const responsableActualizado = await db.get(
       `SELECT resp.idres, resp.nombreres, resp.email, resp.telefono, resp.direccionres,
               ref.idrefugio, ref.nombreref
-       FROM responsables resp
-       JOIN refugios ref ON ref.idrefugio = resp.idrefugio
-       WHERE resp.idres = ?`,
+         FROM Responsables_de_Refugio resp
+         JOIN Refugio ref ON ref.idrefugio = resp.idres
+        WHERE resp.idres = ?`,
       [id]
     );
 
@@ -148,12 +145,12 @@ router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const existente = await db.get('SELECT idres FROM responsables WHERE idres = ?', [id]);
+    const existente = await db.get('SELECT idres FROM Responsables_de_Refugio WHERE idres = ?', [id]);
     if (!existente) {
       return res.status(404).json({ error: 'Responsable no encontrado' });
     }
 
-    await db.run('DELETE FROM responsables WHERE idres = ?', [id]);
+    await db.run('DELETE FROM Responsables_de_Refugio WHERE idres = ?', [id]);
     res.json({ mensaje: 'Responsable eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar responsable:', error);
