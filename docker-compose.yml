@@ -1,0 +1,42 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # 1. SERVICIO DE BASE DE DATOS (PostgreSQL)
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: happypaws_user 
+      POSTGRES_PASSWORD: gustavo # Usar tu contraseña segura
+      POSTGRES_DB: happypawsnvo # Nombre de la nueva DB
+    ports:
+      - "5432:5432" # Acceso para DBeaver
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      
+  # 2. SERVICIO DE BACKEND (Node.js/Express API)
+  backend:
+    build: 
+      context: ./backend # Ruta correcta a tu carpeta de backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Acceso para el Frontend
+    volumes:
+      # Montaje del código fuente: Permite ver los cambios en server.js en tiempo real
+      - ./backend:/usr/src/app 
+      # FIX CRÍTICO: Montaje anónimo para preservar node_modules instalado en el contenedor
+      - /usr/src/app/node_modules 
+    depends_on:
+      - postgres 
+    working_dir: /usr/src/app
+    command: npm start # Usa el script 'start' definido en package.json (más robusto)
+    environment:
+      # Variables de entorno para server.js
+      DB_HOST: postgres # Nombre del servicio de la DB
+      DB_USER: happypaws_user
+      DB_PASS: gustavo
+      DB_NAME: happypawsnvo
+
+volumes:
+  postgres_data:

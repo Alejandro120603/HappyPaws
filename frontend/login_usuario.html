@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HappyPaws 🐾 | Usuario</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header>
+    <h1>🐾 HappyPaws</h1>
+    <p>Conectando corazones</p>
+  </header>
+
+  <main>
+    <div class="container" id="container">
+      <h2>Acceso de Usuario 🧍‍♀️</h2>
+      <p id="question">¿Tienes una cuenta?</p>
+
+      <div id="options">
+        <button class="btn" onclick="showLogin()">Iniciar sesión</button>
+        <button class="btn" onclick="showRegister()">Crear cuenta</button>
+      </div>
+
+      <!-- Formulario de inicio de sesión -->
+      <div id="loginForm" class="form">
+        <input type="text" placeholder="Correo o nombre de usuario" />
+        <input type="password" placeholder="Contraseña" />
+        <button>Entrar</button>
+        <button class="back-btn" onclick="goBack()">Volver</button>
+      </div>
+
+      <!-- Formulario de registro -->
+      <div id="registerForm" class="form">
+        <input type="text" placeholder="Nombre completo" />
+        <input type="email" placeholder="Correo electrónico" />
+        <input type="password" placeholder="Contraseña" />
+        <input type="password" placeholder="Confirmar contraseña" />
+        <button>Registrar cuenta</button>
+        <button class="back-btn" onclick="goBack()">Volver</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    © 2025 HappyPaws – Sistema de Adopciones
+  </footer>
+
+  <script>
+    const question = document.getElementById("question");
+    const options = document.getElementById("options");
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+
+    function showLogin() {
+      options.style.display = "none";
+      question.textContent = "Iniciar sesión";
+      loginForm.style.display = "flex";
+    }
+
+    function showRegister() {
+      options.style.display = "none";
+      question.textContent = "Crear cuenta";
+      registerForm.style.display = "flex";
+    }
+
+    function goBack() {
+      loginForm.style.display = "none";
+      registerForm.style.display = "none";
+      question.textContent = "¿Tienes una cuenta?";
+      options.style.display = "block";
+    }
+  </script>
+</body>
+</html>
+

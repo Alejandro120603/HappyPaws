@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HappyPaws – Refugio</title>
+  <link rel="stylesheet" href="style_refugio.css">
+</head>
+
+<body>
+  <!-- ===== ENCABEZADO PRINCIPAL ===== -->
+  <header id="mainHeader">
+    <div class="header-left">
+      <h1>🐾 HappyPaws</h1>
+      <p>Conecta tu refugio con adoptantes responsables</p>
+    </div>
+
+    <!-- ===== MENÚ DESPLEGABLE EN ESQUINA SUPERIOR DERECHA ===== -->
+    <div class="header-menu fixed-top-right">
+      <button class="menu-btn" onclick="toggleMenu()">☰</button>
+      <div id="dropdownMenu" class="dropdown">
+        <a href="#" onclick="mostrarSeccion('principal')">Inicio</a>
+        <a href="#" onclick="mostrarSeccion('mascotas')">Mis Mascotas</a>
+        <a href="#" onclick="mostrarSeccion('solicitudes')">Solicitudes</a>
+        <a href="#" onclick="mostrarSeccion('perfil')">Mi Perfil</a>
+        <a href="#" onclick="mostrarSeccion('configuracion')">Configuración</a>
+        <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===== INICIO ===== -->
+    <section id="inicioSection" class="info">
+      <h2>¡Bienvenido al panel de refugios!</h2>
+      <p>¿Tu refugio ya está registrado?</p>
+      <div class="options">
+        <button onclick="mostrarLogin()">Iniciar sesión</button>
+        <button onclick="mostrarRegistro()">Registrar refugio</button>
+      </div>
+    </section>
+
+    <!-- ===== LOGIN ===== -->
+    <section id="loginSection" class="info" style="display:none;">
+      <h2>Iniciar sesión</h2>
+      <form id="loginForm">
+        <input type="email" id="loginEmail" placeholder="Correo del refugio" required>
+        <input type="password" id="loginPassword" placeholder="Contraseña" required>
+        <button type="button" onclick="iniciarSesion()">Entrar</button>
+      </form>
+      <p>¿Aún no estás registrado? 
+        <a href="#" onclick="mostrarRegistro()">Regístrate aquí</a>
+      </p>
+    </section>
+
+    <!-- ===== REGISTRO ===== -->
+    <section id="registroSection" class="info" style="display:none;">
+      <h2>Registrar refugio</h2>
+      <form id="registroForm">
+        <input type="text" id="nombreRefugio" placeholder="Nombre del refugio" required>
+        <input type="email" id="email" placeholder="Correo electrónico" required>
+        <input type="password" id="password" placeholder="Contraseña" required>
+        <input type="text" id="telefono" placeholder="Teléfono de contacto" maxlength="10">
+        <input type="text" id="ciudad" placeholder="Ciudad o municipio">
+        <input type="text" id="responsable" placeholder="Nombre del responsable">
+        <button type="button" onclick="registrarRefugio()">Registrar</button>
+      </form>
+      <p>¿Ya tienes una cuenta? 
+        <a href="#" onclick="mostrarLogin()">Inicia sesión</a>
+      </p>
+    </section>
+
+    <!-- ===== PANEL DEL REFUGIO ===== -->
+    <section id="panelRefugio" style="display:none;">
+      <div class="panel-content">
+        <!-- SECCIÓN PRINCIPAL (INICIO) -->
+        <section id="seccionPrincipal" class="subpanel">
+          <h3>🐾 Mis Mascotas</h3>
+          <button class="add-btn" onclick="abrirFormularioMascota()">+ Agregar Mascota</button>
+        </section>
+
+        <!-- ===== MODAL: AGREGAR MASCOTA MEJORADO ===== -->
+        <div id="modalMascota" class="modal" style="display:none;">
+          <div class="modal-content fancy scrollable">
+            <div class="modal-header">
+              <h3>🐾 Nueva Mascota</h3>
+              <span class="close-btn" onclick="cerrarModalMascota()">&times;</span>
+            </div>
+
+            <form id="formMascota" onsubmit="guardarMascota(event)">
+              <div class="preview-container">
+                <img id="previewFotoMascota" src="https://placekitten.com/150/150" alt="Vista previa">
+              </div>
+
+              <label for="fotoMascota" class="upload-label">📸 Seleccionar foto</label>
+              <input type="file" id="fotoMascota" accept="image/*" onchange="mostrarPreview(event)" hidden>
+
+              <label>🐶 Nombre</label>
+              <input type="text" id="nombreMascota" required placeholder="Ej. Luna, Rocky, Coco">
+
+              <div class="form-row">
+                <div>
+                  <label>🎂 Edad</label>
+                  <input type="text" id="edadMascota" placeholder="Ej. 2 años" required>
+                </div>
+                <div>
+                  <label>⚖️ Tamaño</label>
+                  <select id="tamanoMascota" required>
+                    <option value="">Seleccionar...</option>
+                    <option>Pequeño</option>
+                    <option>Mediano</option>
+                    <option>Grande</option>
+                  </select>
+                </div>
+              </div>
+
+              <label>❤️ Estado</label>
+              <select id="estadoMascota" required>
+                <option>Disponible</option>
+                <option>En adopción</option>
+                <option>Adoptado</option>
+              </select>
+
+              <label>📝 Descripción</label>
+              <textarea id="descripcionMascota" rows="3" placeholder="Describe su carácter, salud, gustos..."></textarea>
+
+              <button type="submit" class="btn-save">Guardar Mascota</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- SECCIÓN MASCOTAS -->
+        <section id="seccionMascotas" class="subpanel" style="display:none;">
+          <h3>🐾 Mis Mascotas</h3>
+          <div id="listaMascotasRefugio" class="mascotas-lista"></div>
+        </section>
+
+        <!-- SECCIÓN SOLICITUDES -->
+        <section id="seccionSolicitudes" class="subpanel" style="display:none;">
+          <h3>💌 Solicitudes recibidas</h3>
+          <div id="listaSolicitudesRefugio"></div>
+        </section>
+
+        <!-- SECCIÓN PERFIL -->
+        <section id="seccionPerfil" class="subpanel" style="display:none;">
+          <h3>⚙️ Mi Perfil</h3>
+          <div id="perfilRefugio"></div>
+        </section>
+
+        <!-- SECCIÓN CONFIGURACIÓN -->
+        <section id="seccionConfiguracion" class="subpanel" style="display:none;">
+          <h3>⚙️ Configuración</h3>
+          <form id="configForm" class="config-form" onsubmit="guardarConfiguracion(event)">
+            <label>
+              Teléfono
+              <input type="text" id="cfgTelefono" maxlength="10" placeholder="10 dígitos">
+            </label>
+
+            <label>
+              Ciudad / Municipio
+              <input type="text" id="cfgCiudad" placeholder="Ciudad o municipio">
+            </label>
+
+            <label>
+              Responsable
+              <input type="text" id="cfgResponsable" placeholder="Nombre del responsable">
+            </label>
+
+            <hr style="margin:16px 0; opacity:.2;">
+
+            <label>
+              Nueva contraseña
+              <input type="password" id="cfgPass1" placeholder="Dejar en blanco si no cambias">
+            </label>
+
+            <label>
+              Confirmar contraseña
+              <input type="password" id="cfgPass2" placeholder="Repite la nueva contraseña">
+            </label>
+
+            <button type="submit" class="add-btn">Guardar cambios</button>
+          </form>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 HappyPaws – Con amor por los animales 💙
+  </footer>
+
+  <script src="refugio.js"></script>
+</body>
+</html>

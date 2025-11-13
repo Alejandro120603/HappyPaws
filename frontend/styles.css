@@ -1,0 +1,69 @@
+/* === MOCKUP DE TELÉFONO === */
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9eef2;
+}
+
+/* Marco general */
+.phone-frame {
+  width: 380px;
+  height: 760px;
+  background: #000;
+  border-radius: 42px;
+  padding: 10px;
+  box-shadow: 0 0 30px rgba(0,0,0,0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Borde interior */
+.phone-frame::before {
+  content: "";
+  position: absolute;
+  top: 6px; left: 6px; right: 6px; bottom: 6px;
+  border-radius: 36px;
+  background: #fff;
+  z-index: 0;
+}
+
+/* Cámara superior */
+.phone-frame::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 20px;
+  background: #111;
+  border-radius: 10px;
+  z-index: 5;
+}
+
+/* Contenedor app */
+.app {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 32px;
+  overflow: hidden;
+}
+
+/* En pantallas pequeñas (móvil real) quitar marco */
+@media (max-width: 480px) {
+  body { background: var(--hp-light); }
+  .phone-frame {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .phone-frame::before,
+  .phone-frame::after {
+    display: none;
+  }
+}

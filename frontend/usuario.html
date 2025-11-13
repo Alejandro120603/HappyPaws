@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HappyPaws – Adoptante</title>
+
+  <!-- Tipografía -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="usuario.css"/>
+</head>
+
+<body>
+  <!-- ===== HEADER ===== -->
+  <header class="hp-header">
+    <div class="hp-wrap">
+      <div class="hp-brand">
+        <span class="hp-logo" aria-hidden="true">🐾</span>
+        <h1>HappyPaws</h1>
+      </div>
+      <p class="hp-sub">Conecta con refugios y encuentra a tu compañero ideal</p>
+
+      <!-- ===== MENÚ DESPLEGABLE ===== -->
+      <div class="menu-container">
+        <button id="menu-toggle" class="menu-toggle">☰</button>
+        <nav id="dropdown-menu" class="dropdown-menu">
+          <a href="#" onclick="mostrarPanelUsuario()">Inicio</a>
+          <a href="#" onclick="irAPerfil()">Mi perfil</a>
+          <a href="#" onclick="irAMisSolicitudes()">Mis solicitudes</a>
+          <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="hp-main">
+    <!-- ===== PANTALLA DE BIENVENIDA ===== -->
+    <section id="inicioSection" class="hp-card hp-auth active">
+      <h2>¡Bienvenido a HappyPaws!</h2>
+      <p class="hp-muted">El lugar donde las historias felices comienzan 💙</p>
+      <div class="hp-actions">
+        <button class="hp-btn hp-btn--primary" onclick="mostrarLogin()">Iniciar sesión</button>
+        <button class="hp-btn hp-btn--ghost" onclick="mostrarRegistro()">Crear cuenta</button>
+      </div>
+    </section>
+
+    <!-- ===== LOGIN ===== -->
+    <section id="loginSection" class="hp-card hp-auth" style="display:none;">
+      <h2>Iniciar sesión</h2>
+      <form id="loginForm" onsubmit="event.preventDefault(); iniciarSesion();" class="hp-form">
+        <input type="email" id="loginEmail" placeholder="Correo electrónico" required />
+        <input type="password" id="loginPassword" placeholder="Contraseña" required />
+        <button type="submit" class="hp-btn hp-btn--primary hp-btn--full">Entrar</button>
+      </form>
+      <p class="hp-alt">¿No tienes cuenta?
+        <a href="#" onclick="mostrarRegistro()">Crea una aquí</a>
+      </p>
+    </section>
+
+    <!-- ===== REGISTRO ===== -->
+    <section id="registroSection" class="hp-card hp-auth" style="display:none;">
+      <h2>Crear cuenta</h2>
+      <form id="registroForm" onsubmit="event.preventDefault(); registrarUsuario();" class="hp-form">
+        <input type="text" id="nombreComp" placeholder="Nombre completo" required />
+        <input type="email" id="email" placeholder="Correo electrónico" required />
+        <input type="password" id="password" placeholder="Contraseña" required />
+        <input type="text" id="telefono" placeholder="Teléfono (solo números)" maxlength="10" />
+        <input type="text" id="ciudad" placeholder="Ciudad (Ej. Monterrey)" />
+        <button type="submit" class="hp-btn hp-btn--primary hp-btn--full">Registrar</button>
+      </form>
+      <p class="hp-alt">¿Ya tienes cuenta?
+        <a href="#" onclick="mostrarLogin()">Inicia sesión</a>
+      </p>
+    </section>
+
+    <!-- ===== PANEL DEL USUARIO ===== -->
+    <section id="panelUsuario" class="hp-panel" style="display:none;">
+      <div class="hp-topbar">
+        <div class="hp-brand-sm">
+          <span class="hp-logo" aria-hidden="true">🐾</span>
+          <strong>HappyPaws</strong>
+        </div>
+        <div class="hp-user">
+          <span id="userName" class="hp-user__name">Usuario</span>
+        </div>
+      </div>
+
+      <!-- Bienvenida -->
+      <section class="hp-hello hp-card">
+        <h2>¡Hola <span id="nombreUsuario">amigo</span>! 💙</h2>
+        <p class="hp-muted">Encuentra a tu compañero ideal y adopta con el corazón.</p>
+      </section>
+
+      <!-- ===== LISTA DE MASCOTAS ===== -->
+      <section class="hp-card mascotas">
+        <h3 class="hp-section-title">🐾 Conoce a quienes buscan una familia 💕</h3>
+        <input type="text" id="buscarMascota" placeholder="Buscar por nombre, especie, refugio o ciudad..." class="hp-buscar" oninput="filtrarMascotas()">
+        <div id="listaMascotas" class="hp-grid"></div>
+        <p id="sinMascotas" class="hp-muted" style="text-align:center; display:none;">🐾 No hay mascotas que coincidan con tu búsqueda</p>
+      </section>
+
+      <!-- ===== DETALLE DE MASCOTA ===== -->
+      <section id="detalleMascotaSection" class="hp-card" style="display:none;">
+        <button class="volver-btn" onclick="volverALista()">← Volver</button>
+        <div id="detalleMascota" class="detalle-mascota"></div>
+      </section>
+    </section>
+
+    <!-- ===== MIS SOLICITUDES ===== -->
+    <section id="solicitudesSection" class="hp-card" style="display:none;">
+      <h3 class="hp-section-title">💌 Mis solicitudes de adopción</h3>
+      <div id="listaSolicitudes" class="hp-solicitudes"></div>
+      <button class="hp-btn hp-btn--ghost" onclick="volverAlPanel()">← Volver</button>
+    </section>
+
+    <!-- ===== PERFIL ===== -->
+    <section id="perfilSection" class="hp-card" style="display:none;">
+      <h3 class="hp-section-title">⚙️ Mi Perfil</h3>
+      <div id="perfilVista" class="hp-perfil-vista">
+        <div class="hp-perfil-info">
+          <p><strong>👤 Nombre:</strong> <span id="perfilNombreVista">—</span></p>
+          <p><strong>📧 Correo:</strong> <span id="perfilCorreoVista">—</span></p>
+          <p><strong>📱 Teléfono:</strong> <span id="perfilTelefonoVista">—</span></p>
+          <p><strong>📍 Ciudad:</strong> <span id="perfilCiudadVista">—</span></p>
+        </div>
+        <div class="hp-actions">
+          <button class="hp-btn hp-btn--primary hp-btn--full" onclick="mostrarEdicionPerfil()">Editar perfil ✏️</button>
+          <button class="hp-btn hp-btn--ghost hp-btn--full" onclick="volverAlPanel()">← Volver</button>
+        </div>
+      </div>
+
+      <form id="perfilForm" class="hp-form" style="display:none;" onsubmit="event.preventDefault(); guardarPerfil();">
+        <label for="perfilNombre">Nombre completo</label>
+        <input type="text" id="perfilNombre" placeholder="Tu nombre" required>
+        <label for="perfilTelefono">Teléfono</label>
+        <input type="text" id="perfilTelefono" maxlength="10" placeholder="Tu teléfono">
+        <label for="perfilCiudad">Ciudad</label>
+        <input type="text" id="perfilCiudad" placeholder="Tu ciudad">
+        <div class="hp-actions">
+          <button type="submit" class="hp-btn hp-btn--primary hp-btn--full">💾 Guardar cambios</button>
+          <button type="button" class="hp-btn hp-btn--ghost hp-btn--full" onclick="cancelarEdicionPerfil()">Cancelar</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="hp-footer">
+    <div class="hp-wrap">
+      © 2025 HappyPaws — Cuidamos corazones, no solo mascotas 💕
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="menu.js"></script>
+</body>
+</html>
