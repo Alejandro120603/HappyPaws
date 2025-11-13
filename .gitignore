@@ -1,5 +1,5 @@
 # SQLite database files
-*.db
+db/*.db
 *.sqlite
 *.sqlite3
 
@@ -7,6 +7,12 @@
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Node dependencies
+node_modules/
+
+# Environment files
+.env
 
 # Local data folder
 /data/

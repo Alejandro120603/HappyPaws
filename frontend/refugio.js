@@ -125,7 +125,7 @@ async function registrarRefugio() {
     const nuevoRefugio = { nombreRefugio, email, password, telefono, ciudad, responsable };
 
     try {
-        const respuesta = await fetch(`${URL_BASE}/refugio/registro`, {
+        const respuesta = await fetch(`${URL_BASE}/refugios/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(nuevoRefugio)
@@ -143,7 +143,7 @@ async function registrarRefugio() {
 
     } catch (error) {
         console.error("Error de fetch al registrar refugio:", error);
-        mostrarAlerta("Error de conexión con el servidor. ¿Docker está activo?", "error");
+        mostrarAlerta("Error de conexión con el servidor backend.", "error");
     }
 }
 
@@ -156,7 +156,7 @@ async function iniciarSesion() {
     }
 
     try {
-        const respuesta = await fetch(`${URL_BASE}/refugio/login`, {
+        const respuesta = await fetch(`${URL_BASE}/refugios/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -186,7 +186,7 @@ async function iniciarSesion() {
         }
     } catch (error) {
         console.error("Error de fetch en login de refugio:", error);
-        mostrarAlerta("Error de conexión con el servidor. ¿Docker está activo?", "error");
+        mostrarAlerta("Error de conexión con el servidor backend.", "error");
     }
 }
 
@@ -215,7 +215,7 @@ async function guardarConfiguracion(ev) {
     };
 
     try {
-        const respuesta = await fetch(`${URL_BASE}/refugio/config/${ra.idRes}`, {
+        const respuesta = await fetch(`${URL_BASE}/responsables/${ra.idRes}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datosAEnviar)
@@ -238,14 +238,14 @@ async function guardarConfiguracion(ev) {
             document.getElementById("cfgPass2").value = "";
             mostrarPanelRefugio(); 
 
-            mostrarAlerta(datos.message || "Configuración guardada correctamente.", "success");
+            mostrarAlerta(datos.mensaje || datos.message || "Configuración guardada correctamente.", "success");
         } else {
-            mostrarAlerta(datos.error || datos.message || "Error al actualizar la configuración.", "error");
+            mostrarAlerta(datos.error || datos.mensaje || datos.message || "Error al actualizar la configuración.", "error");
         }
 
     } catch (error) {
         console.error("Error de fetch al guardar configuración:", error);
-        mostrarAlerta("Error de conexión con el servidor.", "error");
+        mostrarAlerta("Error de conexión con el servidor backend.", "error");
     }
 }
 
@@ -296,7 +296,7 @@ async function guardarMascota(event) {
     };
 
     try {
-        const respuesta = await fetch(`${URL_BASE}/mascotas/nueva`, {
+        const respuesta = await fetch(`${URL_BASE}/mascotas`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(nuevaMascota)
@@ -314,7 +314,7 @@ async function guardarMascota(event) {
 
     } catch (error) {
         console.error("Error de fetch al registrar mascota:", error);
-        mostrarAlerta("Error de conexión con el servidor. ¿Docker está activo?", "error");
+        mostrarAlerta("Error de conexión con el servidor backend.", "error");
     }
 }
 
@@ -331,18 +331,17 @@ async function mostrarMascotasRefugio() {
   lista.innerHTML = "<h4>Cargando tus mascotas... 🐾</h4>";
   
   try {
-      const respuesta = await fetch(`${URL_BASE}/mascotas`);
-      const mascotasPublicas = await respuesta.json();
+      const respuesta = await fetch(`${URL_BASE}/refugios/${ra.idRes}/mascotas`);
+      const datos = await respuesta.json();
 
       if (!respuesta.ok) {
-          throw new Error(mascotasPublicas.error || "Error al obtener lista pública.");
+          throw new Error(datos.error || "Error al obtener lista de mascotas.");
       }
-      
-      // 🚨 CORRECCIÓN: Convertir ambos IDs a String para la comparación
-      const idRefugioActivoStr = String(ra.idRes); 
 
-      // Filtramos por el campo idrefugio (la clave que devuelve PostgreSQL)
-      const propias = mascotasPublicas.filter(m => String(m.idrefugio) === idRefugioActivoStr); 
+      const propias = (datos.mascotas || []).map(m => ({
+          ...m,
+          img_url: m.img_url || 'https://via.placeholder.com/150'
+      }));
 
       if (!propias.length) {
           lista.innerHTML = "<p>No tienes mascotas registradas aún 🐾</p>";
@@ -387,15 +386,15 @@ async function eliminarMascota(idMascota) {
         const datos = await respuesta.json();
         
         if (respuesta.ok) {
-            mostrarAlerta(datos.message || `Mascota ID ${idMascota} eliminada.`, "success");
-            mostrarMascotasRefugio(); 
+            mostrarAlerta(datos.mensaje || datos.message || `Mascota ID ${idMascota} eliminada.`, "success");
+            mostrarMascotasRefugio();
         } else {
-            mostrarAlerta(datos.message || datos.error || "Error al eliminar la mascota.", "error");
+            mostrarAlerta(datos.mensaje || datos.message || datos.error || "Error al eliminar la mascota.", "error");
         }
         
     } catch (error) {
         console.error("Error de fetch al eliminar mascota:", error);
-        mostrarAlerta("Error de conexión con el servidor. ¿Docker está activo?", "error");
+        mostrarAlerta("Error de conexión con el servidor backend.", "error");
     }
 }
 

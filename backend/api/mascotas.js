@@ -1,0 +1,118 @@
+const express = require('express');
+const db = require('../database');
+
+const router = express.Router();
+
+const formatearMascota = (m) => ({
+  idmascota: m.idmascota,
+  nombre: m.nombremasc,
+  especie: m.especie,
+  raza: m.raza,
+  sexo: m.sexo,
+  edad: m.edady,
+  ciudad: m.direccionref,
+  idrefugio: m.idrefugio,
+  img_url: m.img_url || 'https://via.placeholder.com/260x200?text=Añadir+Imagen',
+});
+
+router.get('/', async (_req, res) => {
+  try {
+    const mascotas = await db.all(
+      `SELECT m.idmascota, m.nombremasc, m.especie, m.raza, m.sexo, m.edady, m.idrefugio,
+              r.direccionref
+       FROM Mascota m
+       JOIN Refugio r ON r.idrefugio = m.idrefugio
+       ORDER BY m.idmascota DESC`
+    );
+
+    res.json(mascotas.map(formatearMascota));
+  } catch (error) {
+    console.error('Error al obtener mascotas:', error);
+    res.status(500).json({ error: 'Error interno del servidor al consultar mascotas' });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const mascota = await db.get(
+      `SELECT m.idmascota, m.nombremasc, m.especie, m.raza, m.sexo, m.edady, m.idrefugio,
+              r.direccionref
+       FROM Mascota m
+       JOIN Refugio r ON r.idrefugio = m.idrefugio
+       WHERE m.idmascota = ?`,
+      [id]
+    );
+
+    if (!mascota) {
+      return res.status(404).json({ error: 'Mascota no encontrada' });
+    }
+
+    res.json(formatearMascota(mascota));
+  } catch (error) {
+    console.error('Error al obtener mascota:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+router.post('/', async (req, res) => {
+  const { idRefugio, nombre, edad, especie, raza, sexo } = req.body;
+
+  if (!idRefugio || !nombre || !especie || !raza || !sexo || typeof edad === 'undefined') {
+    return res.status(400).json({ error: 'Faltan datos obligatorios para la mascota.' });
+  }
+
+  try {
+    const refugio = await db.get('SELECT idrefugio FROM Refugio WHERE idrefugio = ?', [idRefugio]);
+    if (!refugio) {
+      return res.status(400).json({ error: 'El refugio especificado no existe.' });
+    }
+
+    const edadNumero = Number(edad);
+    if (!Number.isInteger(edadNumero) || edadNumero < 0) {
+      return res.status(400).json({ error: 'La edad debe ser un número entero positivo.' });
+    }
+
+    const resultado = await db.run(
+      'INSERT INTO Mascota (idrefugio, nombremasc, especie, raza, sexo, edady) VALUES (?, ?, ?, ?, ?, ?)',
+      [idRefugio, nombre, especie, raza, sexo, edadNumero]
+    );
+
+    const mascota = await db.get(
+      `SELECT m.idmascota, m.nombremasc, m.especie, m.raza, m.sexo, m.edady, m.idrefugio,
+              r.direccionref
+       FROM Mascota m
+       JOIN Refugio r ON r.idrefugio = m.idrefugio
+       WHERE m.idmascota = ?`,
+      [resultado.id]
+    );
+
+    res.status(201).json({
+      mensaje: 'Mascota registrada con éxito',
+      mascota: formatearMascota(mascota),
+    });
+  } catch (error) {
+    console.error('Error al registrar mascota:', error);
+    res.status(500).json({ error: 'Error interno del servidor al registrar la mascota.' });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const existente = await db.get('SELECT idmascota FROM Mascota WHERE idmascota = ?', [id]);
+    if (!existente) {
+      return res.status(404).json({ error: 'Mascota no encontrada' });
+    }
+
+    await db.run('DELETE FROM Mascota WHERE idmascota = ?', [id]);
+    res.json({ mensaje: 'Mascota eliminada correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar mascota:', error);
+    res.status(500).json({ error: 'Error interno del servidor al eliminar la mascota.' });
+  }
+});
+
+module.exports = router;
