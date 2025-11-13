@@ -11,18 +11,18 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const existente = await db.get('SELECT idusuario FROM Usuario WHERE email = ?', [email]);
+    const existente = await db.get('SELECT idusuario FROM usuarios WHERE email = ?', [email.trim()]);
     if (existente) {
       return res.status(409).json({ error: 'Este correo ya está registrado.' });
     }
 
     const insercion = await db.run(
-      'INSERT INTO Usuario (nombrecomp, email, password, telefono, ciudad) VALUES (?, ?, ?, ?, ?)',
-      [nombre, email, password, telefono || null, ciudad || null]
+      'INSERT INTO usuarios (nombrecomp, email, password, telefono, ciudad) VALUES (?, ?, ?, ?, ?)',
+      [nombre.trim(), email.trim(), password.trim(), telefono || null, ciudad || null]
     );
 
     const usuario = await db.get(
-      'SELECT idusuario, nombrecomp, email, telefono, ciudad FROM Usuario WHERE idusuario = ?',
+      'SELECT idusuario, nombrecomp, email, telefono, ciudad FROM usuarios WHERE idusuario = ?',
       [insercion.id]
     );
 
@@ -45,8 +45,8 @@ router.post('/login', async (req, res) => {
 
   try {
     const usuario = await db.get(
-      'SELECT idusuario, nombrecomp, email, password, telefono, ciudad FROM Usuario WHERE email = ?',
-      [email]
+      'SELECT idusuario, nombrecomp, email, password, telefono, ciudad FROM usuarios WHERE email = ?',
+      [email.trim()]
     );
 
     if (!usuario) {
@@ -74,7 +74,7 @@ router.get('/:id', async (req, res) => {
 
   try {
     const usuario = await db.get(
-      'SELECT idusuario, nombrecomp, email, telefono, ciudad FROM Usuario WHERE idusuario = ?',
+      'SELECT idusuario, nombrecomp, email, telefono, ciudad FROM usuarios WHERE idusuario = ?',
       [id]
     );
 
@@ -94,7 +94,7 @@ router.put('/:id', async (req, res) => {
   const { nombreComp, telefono, ciudad } = req.body;
 
   try {
-    const existente = await db.get('SELECT idusuario FROM Usuario WHERE idusuario = ?', [id]);
+    const existente = await db.get('SELECT idusuario FROM usuarios WHERE idusuario = ?', [id]);
     if (!existente) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -120,10 +120,10 @@ router.put('/:id', async (req, res) => {
     }
 
     valores.push(id);
-    await db.run(`UPDATE Usuario SET ${campos.join(', ')} WHERE idusuario = ?`, valores);
+    await db.run(`UPDATE usuarios SET ${campos.join(', ')} WHERE idusuario = ?`, valores);
 
     const usuario = await db.get(
-      'SELECT idusuario, nombrecomp, email, telefono, ciudad FROM Usuario WHERE idusuario = ?',
+      'SELECT idusuario, nombrecomp, email, telefono, ciudad FROM usuarios WHERE idusuario = ?',
       [id]
     );
 
