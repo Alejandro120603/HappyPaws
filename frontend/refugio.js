@@ -338,7 +338,9 @@ async function mostrarMascotasRefugio() {
           throw new Error(datos.error || "Error al obtener lista de mascotas.");
       }
 
-      const propias = (datos.mascotas || []).map(m => ({
+      const propias = (datos.mascotas || [])
+          .filter((m) => m.idRefugio === ra.idRes)
+          .map(m => ({
           ...m,
           img_url: m.img_url || 'https://via.placeholder.com/150'
       }));
